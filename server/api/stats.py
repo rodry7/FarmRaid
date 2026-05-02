@@ -19,7 +19,9 @@ async def overview(
 ) -> StatsOverview:
     counts: dict[str, int] = {}
     for s in ("pending", "accepted", "rejected"):
-        res = await db.execute(select(func.count()).select_from(Flag).where(Flag.status == s))
+        res = await db.execute(
+            select(func.count()).select_from(Flag).where(Flag.status == s)
+        )
         counts[s] = res.scalar_one() or 0
 
     total_res = await db.execute(select(func.count()).select_from(Flag))

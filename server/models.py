@@ -27,7 +27,9 @@ class Team(Base):
     )
 
     flags: Mapped[list["Flag"]] = relationship("Flag", back_populates="team")
-    exploit_runs: Mapped[list["ExploitRun"]] = relationship("ExploitRun", back_populates="team")
+    exploit_runs: Mapped[list["ExploitRun"]] = relationship(
+        "ExploitRun", back_populates="team"
+    )
 
 
 class Exploit(Base):
@@ -37,16 +39,22 @@ class Exploit(Base):
     name: Mapped[str] = mapped_column(Text, nullable=False)
     filename: Mapped[str] = mapped_column(Text, nullable=False)
     language: Mapped[str] = mapped_column(Text, nullable=False)  # 'python' | 'bash'
-    enabled: Mapped[bool] = mapped_column(Boolean, server_default="true", nullable=False)
+    enabled: Mapped[bool] = mapped_column(
+        Boolean, server_default="true", nullable=False
+    )
     period: Mapped[int] = mapped_column(Integer, server_default="120", nullable=False)
     timeout: Mapped[int] = mapped_column(Integer, server_default="30", nullable=False)
-    last_run: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_run: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
     flags: Mapped[list["Flag"]] = relationship("Flag", back_populates="exploit")
-    exploit_runs: Mapped[list["ExploitRun"]] = relationship("ExploitRun", back_populates="exploit")
+    exploit_runs: Mapped[list["ExploitRun"]] = relationship(
+        "ExploitRun", back_populates="exploit"
+    )
 
 
 class Flag(Base):
@@ -65,9 +73,13 @@ class Flag(Base):
     captured_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    submitted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
-    exploit: Mapped[Optional["Exploit"]] = relationship("Exploit", back_populates="flags")
+    exploit: Mapped[Optional["Exploit"]] = relationship(
+        "Exploit", back_populates="flags"
+    )
     team: Mapped[Optional["Team"]] = relationship("Team", back_populates="flags")
 
 
@@ -84,11 +96,17 @@ class ExploitRun(Base):
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     exit_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     stdout: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     stderr: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    flags_found: Mapped[int] = mapped_column(Integer, server_default="0", nullable=False)
+    flags_found: Mapped[int] = mapped_column(
+        Integer, server_default="0", nullable=False
+    )
 
-    exploit: Mapped[Optional["Exploit"]] = relationship("Exploit", back_populates="exploit_runs")
+    exploit: Mapped[Optional["Exploit"]] = relationship(
+        "Exploit", back_populates="exploit_runs"
+    )
     team: Mapped[Optional["Team"]] = relationship("Team", back_populates="exploit_runs")

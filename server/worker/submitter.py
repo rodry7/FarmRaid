@@ -48,10 +48,7 @@ async def _claim_pending(db, limit: int) -> list[Flag]:
         .scalar_subquery()
     )
     result = await db.execute(
-        update(Flag)
-        .where(Flag.id.in_(subq))
-        .values(status="queued")
-        .returning(Flag)
+        update(Flag).where(Flag.id.in_(subq)).values(status="queued").returning(Flag)
     )
     await db.commit()
     return list(result.scalars().all())
@@ -71,36 +68,46 @@ async def _publish_stats(redis: aioredis.Redis) -> None:
             total = total_res.scalar_one() or 0
         await redis.publish(
             "flag_updates",
-            json.dumps({
-                "type": "stats",
-                "data": {
-                    "total": total,
-                    "accepted": counts["accepted"],
-                    "rejected": counts["rejected"],
-                    "pending": counts["pending"],
-                },
-            }),
+            json.dumps(
+                {
+                    "type": "stats",
+                    "data": {
+                        "total": total,
+                        "accepted": counts["accepted"],
+                        "rejected": counts["rejected"],
+                        "pending": counts["pending"],
+                    },
+                }
+            ),
         )
     except Exception as exc:
         log.warning("Failed to publish stats: %s", exc)
 
 
-async def _publish(redis: aioredis.Redis, flag: Flag, status: str, response: str, submitted_at: datetime) -> None:
+async def _publish(
+    redis: aioredis.Redis,
+    flag: Flag,
+    status: str,
+    response: str,
+    submitted_at: datetime,
+) -> None:
     try:
         await redis.publish(
             "flag_updates",
-            json.dumps({
-                "type": "flag",
-                "data": {
-                    "flag": flag.flag,
-                    "status": status,
-                    "response": response,
-                    "team_id": flag.team_id,
-                    "exploit_id": flag.exploit_id,
-                    "captured_at": flag.captured_at.isoformat(),
-                    "submitted_at": submitted_at.isoformat(),
-                },
-            }),
+            json.dumps(
+                {
+                    "type": "flag",
+                    "data": {
+                        "flag": flag.flag,
+                        "status": status,
+                        "response": response,
+                        "team_id": flag.team_id,
+                        "exploit_id": flag.exploit_id,
+                        "captured_at": flag.captured_at.isoformat(),
+                        "submitted_at": submitted_at.isoformat(),
+                    },
+                }
+            ),
         )
     except Exception as exc:
         log.warning("Redis publish failed: %s", exc)
@@ -137,9 +144,7 @@ async def _run_cycle(redis: aioredis.Redis) -> None:
 
     try:
         protocol = get_protocol(protocol_name, protocol_params)
-        results = await asyncio.wait_for(
-            protocol.submit(flag_strings), timeout=60
-        )
+        results = await asyncio.wait_for(protocol.submit(flag_strings), timeout=60)
     except asyncio.TimeoutError:
         log.error("Protocol submission timed out after 60s — reverting to pending")
         async with AsyncSessionLocal() as db:
@@ -178,7 +183,8 @@ async def _run_cycle(redis: aioredis.Redis) -> None:
     accepted = sum(1 for _, s, _ in results if s == "accepted")
     log.info(
         "Submission cycle complete: %d accepted / %d total",
-        accepted, len(results),
+        accepted,
+        len(results),
     )
     await _publish_stats(redis)
 

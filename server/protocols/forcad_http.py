@@ -51,8 +51,12 @@ class ForcadHTTPProtocol(BaseProtocol):
 
             results: list[tuple[str, str, str]] = []
             for i, flag in enumerate(flags):
-                item = by_flag.get(flag) or (positional[i] if i < len(positional) else {})
-                verdict_raw = item.get("verdict") or item.get("msg") or item.get("status") or ""
+                item = by_flag.get(flag) or (
+                    positional[i] if i < len(positional) else {}
+                )
+                verdict_raw = (
+                    item.get("verdict") or item.get("msg") or item.get("status") or ""
+                )
                 msg = str(verdict_raw)
                 results.append((flag, self.parse_verdict(msg), msg))
             return results

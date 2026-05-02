@@ -11,7 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config_manager import get_config
 from database import get_db
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "change-this-secret-key-in-production-ctf-farm")
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", "change-this-secret-key-in-production-ctf-farm"
+)
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_HOURS = 24
 
@@ -28,7 +30,9 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     payload = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(hours=TOKEN_EXPIRE_HOURS))
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(hours=TOKEN_EXPIRE_HOURS)
+    )
     payload["exp"] = expire
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -42,7 +46,9 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM]
+        )
         sub: str = payload.get("sub", "")
         if sub != "admin":
             raise exc

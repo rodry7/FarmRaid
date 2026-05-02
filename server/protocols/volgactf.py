@@ -16,6 +16,7 @@ class ChecksystemResult(IntEnum):
     The /submit endpoint returns these enum member *names* as plain text, e.g. "SUCCESS".
     Source: C4T-BuT-S4D/S4DFarm volgactf.py
     """
+
     SUCCESS = 0
     ERROR_UNKNOWN = 1
     ERROR_ACCESS_DENIED = 2
@@ -33,19 +34,22 @@ class ChecksystemResult(IntEnum):
 
 # Maps each result code to (canonical_status, human_message).
 _RESULT_MAP: dict[ChecksystemResult, tuple[str, str]] = {
-    ChecksystemResult.SUCCESS:                       ("accepted",  "accepted"),
-    ChecksystemResult.ERROR_FLAG_INVALID:            ("rejected",  "invalid flag"),
-    ChecksystemResult.ERROR_FLAG_EXPIRED:            ("expired",   "flag expired"),
-    ChecksystemResult.ERROR_FLAG_YOUR_OWN:           ("rejected",  "own flag"),
-    ChecksystemResult.ERROR_FLAG_SUBMITTED:          ("duplicate", "already submitted"),
-    ChecksystemResult.ERROR_FLAG_NOT_FOUND:          ("rejected",  "flag not found"),
-    ChecksystemResult.ERROR_COMPETITION_FINISHED:    ("rejected",  "competition finished"),
-    ChecksystemResult.ERROR_UNKNOWN:                 ("error",     "unknown error"),
-    ChecksystemResult.ERROR_ACCESS_DENIED:           ("error",     "access denied"),
-    ChecksystemResult.ERROR_COMPETITION_NOT_STARTED: ("error",     "competition not started"),
-    ChecksystemResult.ERROR_COMPETITION_PAUSED:      ("error",     "competition paused"),
-    ChecksystemResult.ERROR_RATELIMIT:               ("error",     "ratelimit"),
-    ChecksystemResult.ERROR_SERVICE_STATE_INVALID:   ("error",     "service down"),
+    ChecksystemResult.SUCCESS: ("accepted", "accepted"),
+    ChecksystemResult.ERROR_FLAG_INVALID: ("rejected", "invalid flag"),
+    ChecksystemResult.ERROR_FLAG_EXPIRED: ("expired", "flag expired"),
+    ChecksystemResult.ERROR_FLAG_YOUR_OWN: ("rejected", "own flag"),
+    ChecksystemResult.ERROR_FLAG_SUBMITTED: ("duplicate", "already submitted"),
+    ChecksystemResult.ERROR_FLAG_NOT_FOUND: ("rejected", "flag not found"),
+    ChecksystemResult.ERROR_COMPETITION_FINISHED: ("rejected", "competition finished"),
+    ChecksystemResult.ERROR_UNKNOWN: ("error", "unknown error"),
+    ChecksystemResult.ERROR_ACCESS_DENIED: ("error", "access denied"),
+    ChecksystemResult.ERROR_COMPETITION_NOT_STARTED: (
+        "error",
+        "competition not started",
+    ),
+    ChecksystemResult.ERROR_COMPETITION_PAUSED: ("error", "competition paused"),
+    ChecksystemResult.ERROR_RATELIMIT: ("error", "ratelimit"),
+    ChecksystemResult.ERROR_SERVICE_STATE_INVALID: ("error", "service down"),
 }
 
 
@@ -53,7 +57,11 @@ class VolgaCTFProtocol(BaseProtocol):
     name = "volgactf"
     display_name = "VolgaCTF"
     params_schema = {
-        "host":    {"type": "string", "label": "Host",        "placeholder": "monitor.volgactf.ru"},
+        "host": {
+            "type": "string",
+            "label": "Host",
+            "placeholder": "monitor.volgactf.ru",
+        },
         "version": {"type": "string", "label": "API Version", "default": "v1"},
     }
 
@@ -68,7 +76,9 @@ class VolgaCTFProtocol(BaseProtocol):
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             for flag in flags:
                 try:
-                    resp = await client.post(submit_url, content=flag.encode(), headers=headers)
+                    resp = await client.post(
+                        submit_url, content=flag.encode(), headers=headers
+                    )
                     text = resp.text.strip()
 
                     # API returns the enum member name as plain text, e.g. "SUCCESS".

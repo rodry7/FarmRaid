@@ -12,7 +12,7 @@ BUFSIZE = 4096
 
 # Source: C4T-BuT-S4D/S4DFarm faust.py
 RESPONSES: dict[str, list[str]] = {
-    "error":    ["ERR", "INV"],
+    "error": ["ERR", "INV"],
     "accepted": ["OK"],
     "rejected": ["DUP", "OWN", "OLD"],
 }
@@ -48,7 +48,7 @@ class FAUSTProtocol(BaseProtocol):
     name = "faust"
     display_name = "FAUST CTF (TCP)"
     params_schema = {
-        "host": {"type": "string",  "label": "Host", "placeholder": "10.10.10.10"},
+        "host": {"type": "string", "label": "Host", "placeholder": "10.10.10.10"},
         "port": {"type": "integer", "label": "Port", "default": 31337},
     }
 

@@ -12,7 +12,12 @@ from config_manager import get_config
 from database import get_db
 from models import Exploit, Flag, Team
 from protocols import get_protocol
-from schemas import FlagListResponse, FlagResponse, ManualSubmitRequest, ManualSubmitResult
+from schemas import (
+    FlagListResponse,
+    FlagResponse,
+    ManualSubmitRequest,
+    ManualSubmitResult,
+)
 
 router = APIRouter(prefix="/flags", tags=["flags"])
 
@@ -43,7 +48,9 @@ async def list_flags(
     total_res = await db.execute(count_q)
     total = total_res.scalar_one()
 
-    flags_res = await db.execute(q.order_by(Flag.captured_at.desc()).limit(limit).offset(offset))
+    flags_res = await db.execute(
+        q.order_by(Flag.captured_at.desc()).limit(limit).offset(offset)
+    )
     flags = flags_res.scalars().all()
 
     items: list[FlagResponse] = []
@@ -52,7 +59,9 @@ async def list_flags(
         team_ip: Optional[str] = None
 
         if flag.exploit_id:
-            e_res = await db.execute(select(Exploit).where(Exploit.id == flag.exploit_id))
+            e_res = await db.execute(
+                select(Exploit).where(Exploit.id == flag.exploit_id)
+            )
             e = e_res.scalar_one_or_none()
             if e:
                 exploit_name = e.name
@@ -108,15 +117,25 @@ async def manual_submit(
     protocol_params: dict = submission_cfg.get("params") or {}
 
     if not protocol_name:
-        return [ManualSubmitResult(flag=f, status="error", response="no protocol configured") for f in flags]
+        return [
+            ManualSubmitResult(
+                flag=f, status="error", response="no protocol configured"
+            )
+            for f in flags
+        ]
 
     try:
         protocol = get_protocol(protocol_name, protocol_params)
         results = await asyncio.wait_for(protocol.submit(flags), timeout=60)
     except asyncio.TimeoutError:
-        return [ManualSubmitResult(flag=f, status="error", response="submission timed out") for f in flags]
+        return [
+            ManualSubmitResult(flag=f, status="error", response="submission timed out")
+            for f in flags
+        ]
     except Exception as exc:
-        return [ManualSubmitResult(flag=f, status="error", response=str(exc)) for f in flags]
+        return [
+            ManualSubmitResult(flag=f, status="error", response=str(exc)) for f in flags
+        ]
 
     now = datetime.now(timezone.utc)
     output: list[ManualSubmitResult] = []
@@ -128,7 +147,9 @@ async def manual_submit(
                 .where(Flag.id == flag_obj.id)
                 .values(status=status, response=response[:500], submitted_at=now)
             )
-        output.append(ManualSubmitResult(flag=flag_str, status=status, response=response))
+        output.append(
+            ManualSubmitResult(flag=flag_str, status=status, response=response)
+        )
     await db.commit()
 
     return output

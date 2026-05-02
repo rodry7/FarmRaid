@@ -11,11 +11,25 @@ TIMEOUT = 5
 # Substring matching against the response msg field.
 # Source: C4T-BuT-S4D/S4DFarm ructf_http.py
 RESPONSES: dict[str, list[str]] = {
-    "error":    ["timeout", "game not started", "try again later", "game over", "is not up", "no such flag"],
+    "error": [
+        "timeout",
+        "game not started",
+        "try again later",
+        "game over",
+        "is not up",
+        "no such flag",
+    ],
     "accepted": ["accepted", "congrat"],
     "rejected": [
-        "bad", "wrong", "expired", "unknown", "your own",
-        "too old", "not in database", "already submitted", "invalid flag",
+        "bad",
+        "wrong",
+        "expired",
+        "unknown",
+        "your own",
+        "too old",
+        "not in database",
+        "already submitted",
+        "invalid flag",
     ],
 }
 
@@ -70,12 +84,17 @@ class RuCTFEHTTPProtocol(BaseProtocol):
 
         results: list[tuple[str, str, str]] = []
         for i, flag in enumerate(flags):
-            item = by_flag.get(flag) or (data[i] if i < len(data) and isinstance(data[i], dict) else {})
+            item = by_flag.get(flag) or (
+                data[i] if i < len(data) and isinstance(data[i], dict) else {}
+            )
             msg = str(item.get("msg") or "").strip()
             # Strip the "[flag] " prefix the checksystem prepends to some messages.
             msg = msg.replace(f"[{flag}] ", "")
             if not msg:
                 msg = "no response"
-                log.warning("RuCTFE HTTP unknown response for flag %s...; treating as error", flag[:8])
+                log.warning(
+                    "RuCTFE HTTP unknown response for flag %s...; treating as error",
+                    flag[:8],
+                )
             results.append((flag, _parse_msg(msg), msg))
         return results

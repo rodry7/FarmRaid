@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 CONCURRENCY_CAP = 50
 DB_POLL_INTERVAL = 5  # seconds between DB state refreshes
-TICK_INTERVAL = 1     # seconds between scheduling ticks
+TICK_INTERVAL = 1  # seconds between scheduling ticks
 
 # Module-level state — set when run_scheduler() starts.
 # trigger_exploit_now() uses these so it shares the same semaphore & task set.
@@ -56,9 +56,7 @@ async def _load_db_state() -> tuple[list[Exploit], list[Team], str]:
         )
         exploits = list(exploits_res.scalars().all())
 
-        teams_res = await db.execute(
-            select(Team).where(Team.active.is_(True))
-        )
+        teams_res = await db.execute(select(Team).where(Team.active.is_(True)))
         teams = list(teams_res.scalars().all())
 
         competition_cfg = await get_config(db, "competition") or {}
@@ -74,16 +72,12 @@ async def trigger_exploit_now(exploit_id: int) -> int:
     Called by POST /api/exploits/{id}/run.
     """
     async with AsyncSessionLocal() as db:
-        exploit_res = await db.execute(
-            select(Exploit).where(Exploit.id == exploit_id)
-        )
+        exploit_res = await db.execute(select(Exploit).where(Exploit.id == exploit_id))
         exploit = exploit_res.scalar_one_or_none()
         if exploit is None:
             return 0
 
-        teams_res = await db.execute(
-            select(Team).where(Team.active.is_(True))
-        )
+        teams_res = await db.execute(select(Team).where(Team.active.is_(True)))
         teams = list(teams_res.scalars().all())
 
         competition_cfg = await get_config(db, "competition") or {}
@@ -94,7 +88,8 @@ async def trigger_exploit_now(exploit_id: int) -> int:
 
     log.info(
         "Manual trigger: exploit %s dispatched against %d team(s)",
-        exploit.name, len(teams),
+        exploit.name,
+        len(teams),
     )
     return len(teams)
 
@@ -129,7 +124,8 @@ async def run_scheduler() -> None:
                     if now - last_dispatch[exploit.id] >= exploit.period:
                         log.debug(
                             "Dispatching exploit '%s' against %d team(s)",
-                            exploit.name, len(teams),
+                            exploit.name,
+                            len(teams),
                         )
                         for team in teams:
                             _fire(exploit, team, flag_format)

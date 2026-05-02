@@ -28,7 +28,10 @@ class BaseProtocol(ABC):
             return "duplicate"
         if any(k in lo for k in ("expir", "too old", "old flag", "timeout")):
             return "expired"
-        if any(k in lo for k in ("invalid", "wrong", "denied", "reject", "bad flag", "not found")):
+        if any(
+            k in lo
+            for k in ("invalid", "wrong", "denied", "reject", "bad flag", "not found")
+        ):
             return "rejected"
         # "ok" alone is a common accepted signal
         if lo.strip() == "ok":

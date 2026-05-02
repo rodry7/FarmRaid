@@ -34,11 +34,15 @@ async def create_team(
         await db.refresh(team)
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="IP already exists")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="IP already exists"
+        )
     return team
 
 
-@router.post("/bulk", response_model=list[TeamResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/bulk", response_model=list[TeamResponse], status_code=status.HTTP_201_CREATED
+)
 async def bulk_import_teams(
     body: TeamBulkImport,
     db: AsyncSession = Depends(get_db),
@@ -69,7 +73,9 @@ async def update_team(
     result = await db.execute(select(Team).where(Team.id == team_id))
     team = result.scalar_one_or_none()
     if not team:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+        )
 
     if body.name is not None:
         team.name = body.name
@@ -83,7 +89,9 @@ async def update_team(
         await db.refresh(team)
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="IP already exists")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="IP already exists"
+        )
     return team
 
 
@@ -96,6 +104,8 @@ async def delete_team(
     result = await db.execute(select(Team).where(Team.id == team_id))
     team = result.scalar_one_or_none()
     if not team:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
+        )
     await db.execute(delete(Team).where(Team.id == team_id))
     await db.commit()

@@ -57,7 +57,9 @@ async def seed_defaults(db: AsyncSession) -> None:
     existing = await get_all_config(db)
     for key, value in defaults.items():
         if key not in existing:
-            stmt = pg_insert(Config).values(key=key, value=value).on_conflict_do_nothing()
+            stmt = (
+                pg_insert(Config).values(key=key, value=value).on_conflict_do_nothing()
+            )
             await db.execute(stmt)
 
     await db.commit()

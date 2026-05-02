@@ -3,8 +3,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict
 
-
 # ── Auth ──────────────────────────────────────────────────────────────────────
+
 
 class LoginRequest(BaseModel):
     password: str
@@ -20,6 +20,7 @@ class TokenResponse(BaseModel):
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
+
 
 class ConfigSetRequest(BaseModel):
     key: str
@@ -40,6 +41,7 @@ class ProtocolInfo(BaseModel):
 
 
 # ── Teams ─────────────────────────────────────────────────────────────────────
+
 
 class TeamCreate(BaseModel):
     name: str
@@ -67,6 +69,7 @@ class TeamResponse(BaseModel):
 
 
 # ── Exploits ──────────────────────────────────────────────────────────────────
+
 
 class ExploitUpdate(BaseModel):
     name: Optional[str] = None
@@ -108,6 +111,7 @@ class ExploitRunResponse(BaseModel):
 
 # ── Flags ─────────────────────────────────────────────────────────────────────
 
+
 class FlagResponse(BaseModel):
     id: int
     flag: str
@@ -129,6 +133,7 @@ class FlagListResponse(BaseModel):
 
 
 # ── Stats ─────────────────────────────────────────────────────────────────────
+
 
 class StatsOverview(BaseModel):
     total_flags: int
@@ -159,6 +164,7 @@ class ExploitStats(BaseModel):
 
 
 # ── Manual submit ─────────────────────────────────────────────────────────────
+
 
 class ManualSubmitRequest(BaseModel):
     flags: list[str]

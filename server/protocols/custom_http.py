@@ -78,11 +78,15 @@ class CustomHTTPProtocol(BaseProtocol):
             except json.JSONDecodeError:
                 body_bytes = body_template.replace("{flags}", flags_newline).encode()
         else:
-            body_bytes = body_template.encode() if body_template else flags_json.encode()
+            body_bytes = (
+                body_template.encode() if body_template else flags_json.encode()
+            )
 
         try:
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-                resp = await client.request(method, url, content=body_bytes, headers=headers)
+                resp = await client.request(
+                    method, url, content=body_bytes, headers=headers
+                )
                 response_text = resp.text
         except Exception as exc:
             log.error("Custom HTTP submit failed: %s", exc)

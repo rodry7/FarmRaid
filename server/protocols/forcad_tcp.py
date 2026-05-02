@@ -13,12 +13,30 @@ BUFSIZE = 4096
 # Verdict substring matching per ctfcup/ForcAD TCP checksystem conventions.
 # Source: C4T-BuT-S4D/S4DFarm ctfcup_tcp.py
 RESPONSES: dict[str, list[str]] = {
-    "error":    ["timeout", "game not started", "try again later", "game over", "is not up", "no such flag"],
+    "error": [
+        "timeout",
+        "game not started",
+        "try again later",
+        "game over",
+        "is not up",
+        "no such flag",
+    ],
     "accepted": ["accepted", "congrat"],
     "rejected": [
-        "bad", "wrong", "expired", "unknown", "your own", "too old",
-        "not in database", "already submitted", "invalid flag",
-        "self", "invalid", "already_submitted", "team_not_found", "too_old",
+        "bad",
+        "wrong",
+        "expired",
+        "unknown",
+        "your own",
+        "too old",
+        "not in database",
+        "already submitted",
+        "invalid flag",
+        "self",
+        "invalid",
+        "already_submitted",
+        "team_not_found",
+        "too_old",
     ],
 }
 

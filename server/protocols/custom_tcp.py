@@ -80,7 +80,9 @@ class CustomTCPProtocol(BaseProtocol):
                     while True:
                         remaining = deadline - asyncio.get_event_loop().time()
                         if remaining <= 0:
-                            log.warning("custom_tcp: timed out waiting for %r", token_line)
+                            log.warning(
+                                "custom_tcp: timed out waiting for %r", token_line
+                            )
                             break
                         line = await _readline(reader, min(remaining, READ_TIMEOUT))
                         if not line or token_line in line:
