@@ -28,7 +28,10 @@ _DEFAULT_SUBMISSION = {
 
 @router.delete("/reset")
 async def reset_database(
-    mode: Literal["data", "full"] = Query("data", description="'data' clears flags/runs only; 'full' also wipes teams, exploits, and resets config"),
+    mode: Literal["data", "full"] = Query(
+        "data",
+        description="'data' clears flags/runs only; 'full' also wipes teams, exploits, and resets config",
+    ),
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(get_current_user),
 ) -> dict:
@@ -39,9 +42,14 @@ async def reset_database(
         # Full wipe: clear child tables first (they reference exploits/teams),
         # then parent tables, then reset config to defaults (preserving the password).
         await db.execute(
-            text("TRUNCATE TABLE exploit_runs, flags, exploits, teams RESTART IDENTITY CASCADE")
+            text(
+                "TRUNCATE TABLE exploit_runs, flags, exploits, teams RESTART IDENTITY CASCADE"
+            )
         )
-        for key, value in (("competition", _DEFAULT_COMPETITION), ("submission", _DEFAULT_SUBMISSION)):
+        for key, value in (
+            ("competition", _DEFAULT_COMPETITION),
+            ("submission", _DEFAULT_SUBMISSION),
+        ):
             await db.execute(
                 pg_insert(Config)
                 .values(key=key, value=value)
