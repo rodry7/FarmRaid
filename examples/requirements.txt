@@ -1,0 +1,12 @@
+# Common CTF libraries for FarmRaid exploit scripts.
+#
+# Server-side: these are pre-installed in the server image — you do NOT need
+# to list them in your per-exploit requirements.txt.
+#
+# Client-side: install manually before running client/start_sploit.py:
+#   pip install -r examples/requirements.txt
+
+requests>=2.31.0
+pwntools>=4.12.0
+pycryptodome>=3.20.0
+paramiko>=3.4.0
