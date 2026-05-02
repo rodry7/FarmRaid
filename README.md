@@ -31,7 +31,7 @@ Inspired by [DestructiveFarm](https://github.com/DestructiveVoice/DestructiveFar
 **Requirements:** Docker ≥ 24, Docker Compose V2 (`docker compose`, not `docker-compose`).
 
 ```bash
-git clone https://github.com/yourorg/farmraid
+git clone https://github.com/rodry7/farmraid
 cd farmraid
 cp .env.example .env   # edit passwords before a real competition
 docker compose up -d
