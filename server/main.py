@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.admin import router as admin_router
 from api.config import router as config_router
 from api.exploits import router as exploits_router
 from api.flags import router as flags_router
@@ -52,6 +53,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(admin_router, prefix="/api")
 app.include_router(config_router, prefix="/api")
 app.include_router(teams_router, prefix="/api")
 app.include_router(exploits_router, prefix="/api")

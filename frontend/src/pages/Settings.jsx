@@ -24,6 +24,10 @@ export default function Settings() {
   const [flagTest, setFlagTest] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [resetConfirm, setResetConfirm] = useState(null) // null | 'data' | 'full'
+  const [confirmText, setConfirmText] = useState('')
+  const [resetting, setResetting] = useState(false)
+  const [resetStatus, setResetStatus] = useState(null) // { ok, msg } | null
 
   useEffect(() => { fetchConfig() }, [])
 
@@ -73,6 +77,27 @@ export default function Settings() {
   if (flagTest && competition.flag_format) {
     try { flagTestMatch = new RegExp(competition.flag_format).test(flagTest) }
     catch { flagTestMatch = false }
+  }
+
+  const cancelReset = () => { setResetConfirm(null); setConfirmText('') }
+
+  const doReset = async () => {
+    if (confirmText !== 'RESET' || resetting) return
+    setResetting(true)
+    try {
+      await api.delete(`/api/admin/reset?mode=${resetConfirm}`)
+      const msg = resetConfirm === 'full'
+        ? 'Full reset complete. Configuration restored to defaults.'
+        : 'All flags and run history have been cleared.'
+      setResetStatus({ ok: true, msg })
+      if (resetConfirm === 'full') fetchConfig()
+    } catch (e) {
+      setResetStatus({ ok: false, msg: e.response?.data?.detail || 'Reset failed.' })
+    } finally {
+      setResetting(false)
+      cancelReset()
+      setTimeout(() => setResetStatus(null), 5000)
+    }
   }
 
   const saveBtnCls = 'bg-farm-green text-black font-bold px-4 py-2 rounded text-xs uppercase tracking-wide disabled:opacity-50 hover:brightness-110 transition-all'
@@ -234,6 +259,96 @@ export default function Settings() {
               <li>Only use in isolated CTF network environments</li>
               <li>No HTTPS by default — add a reverse proxy for remote access</li>
             </ul>
+          </div>
+
+          <div className="border-t border-farm-red/20 pt-5">
+            <h2 className="text-[9px] font-bold tracking-[0.1em] uppercase text-farm-red mb-0.5">Danger Zone</h2>
+            <p className="text-[10px] text-farm-sub mb-4">These actions are permanent and cannot be undone.</p>
+
+            {resetStatus && (
+              <div className={`text-xs mb-4 px-3 py-2 rounded border font-mono ${
+                resetStatus.ok
+                  ? 'text-farm-green border-farm-green/30 bg-farm-green/10'
+                  : 'text-farm-red border-farm-red/30 bg-farm-red/10'
+              }`}>
+                {resetStatus.msg}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-4 p-3 rounded border border-farm-border">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-farm-text">Clear Flags &amp; Runs</p>
+                  <p className="text-[10px] text-farm-sub mt-0.5">
+                    Deletes all flags and exploit run history. Keeps teams, exploits and settings.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setResetConfirm('data')}
+                  className="shrink-0 px-3 py-1.5 text-xs font-bold rounded border border-farm-red/40 text-farm-red hover:bg-farm-red/10 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+
+              <div className="flex items-center gap-4 p-3 rounded border border-farm-red/25 bg-farm-red/5">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-farm-red">Full Reset</p>
+                  <p className="text-[10px] text-farm-sub mt-0.5">
+                    Deletes everything and resets configuration to defaults. Keeps password.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setResetConfirm('full')}
+                  className="shrink-0 px-3 py-1.5 text-xs font-bold rounded bg-farm-red text-white hover:brightness-110 transition-all"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {resetConfirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-farm-card border border-farm-border rounded-lg p-6 w-full max-w-sm space-y-4">
+            <h3 className="text-sm font-bold text-farm-red uppercase tracking-wide">
+              {resetConfirm === 'full' ? 'Full Reset' : 'Clear Flags & Runs'}
+            </h3>
+            <p className="text-xs text-farm-sub leading-relaxed">
+              {resetConfirm === 'full'
+                ? 'This will permanently delete all teams, exploits, flags, and run history, then reset configuration to defaults. Your password will be preserved.'
+                : 'This will permanently delete all flags and exploit run history. Teams, exploits, and settings will be kept.'
+              }
+            </p>
+            <div>
+              <p className="text-[10px] text-farm-sub mb-1.5">
+                Type <span className="font-mono font-bold text-farm-red">RESET</span> to confirm:
+              </p>
+              <input
+                autoFocus
+                className={inputCls}
+                value={confirmText}
+                onChange={e => setConfirmText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') doReset(); if (e.key === 'Escape') cancelReset() }}
+                placeholder="RESET"
+              />
+            </div>
+            <div className="flex gap-2 justify-end pt-1">
+              <button
+                onClick={cancelReset}
+                className="px-4 py-2 text-xs font-bold rounded bg-farm-border text-farm-sub hover:text-farm-text transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={doReset}
+                disabled={confirmText !== 'RESET' || resetting}
+                className="px-4 py-2 text-xs font-bold rounded bg-farm-red text-white disabled:opacity-40 hover:brightness-110 transition-all"
+              >
+                {resetting ? 'Resetting…' : 'Confirm Reset'}
+              </button>
+            </div>
           </div>
         </div>
       )}
