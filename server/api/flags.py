@@ -96,20 +96,63 @@ async def manual_submit(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(get_current_user),
 ) -> list[ManualSubmitResult]:
-    flags = list(dict.fromkeys(f.strip() for f in body.flags if f.strip()))
-    if not flags:
+    # Normalise to (flag_str, team_ip | None), deduplicate by flag string.
+    # All items are FlagSubmitItem — the schema validator normalises plain strings.
+    normalized: list[tuple[str, str | None]] = []
+    seen: set[str] = set()
+    for item in body.flags:
+        flag_str = item.flag.strip()
+        if flag_str and flag_str not in seen:
+            seen.add(flag_str)
+            normalized.append((flag_str, item.team_ip))
+
+    if not normalized:
         return []
 
-    # Insert new flags; skip any that already exist in the DB.
-    for flag_str in flags:
+    # Resolve exploit_id — look up by name, create a stub record if unknown.
+    exploit_id: int | None = None
+    if body.exploit_name:
+        e_res = await db.execute(
+            select(Exploit).where(Exploit.name == body.exploit_name).limit(1)
+        )
+        exploit = e_res.scalar_one_or_none()
+        if exploit is None:
+            language = "bash" if body.exploit_name.endswith(".sh") else "python"
+            exploit = Exploit(
+                name=body.exploit_name,
+                filename=body.exploit_name,
+                language=language,
+                enabled=False,
+            )
+            db.add(exploit)
+            await db.flush()
+        exploit_id = exploit.id
+
+    # Bulk-resolve team IPs → team IDs.
+    team_ip_to_id: dict[str, int] = {}
+    unique_ips = {ip for _, ip in normalized if ip}
+    if unique_ips:
+        t_res = await db.execute(select(Team).where(Team.ip.in_(unique_ips)))
+        for team in t_res.scalars().all():
+            team_ip_to_id[team.ip] = team.id
+
+    # Insert new flags with attribution; skip any that already exist in the DB.
+    for flag_str, team_ip in normalized:
+        team_id = team_ip_to_id.get(team_ip) if team_ip else None
+        values: dict = {"flag": flag_str, "status": "pending"}
+        if exploit_id is not None:
+            values["exploit_id"] = exploit_id
+        if team_id is not None:
+            values["team_id"] = team_id
         await db.execute(
             pg_insert(Flag)
-            .values(flag=flag_str, status="pending")
+            .values(**values)
             .on_conflict_do_nothing(index_elements=["flag"])
         )
     await db.commit()
 
-    res = await db.execute(select(Flag).where(Flag.flag.in_(flags)))
+    flags_list = [flag_str for flag_str, _ in normalized]
+    res = await db.execute(select(Flag).where(Flag.flag.in_(flags_list)))
     flag_map: dict[str, Flag] = {f.flag: f for f in res.scalars().all()}
 
     submission_cfg = await get_config(db, "submission") or {}
@@ -121,20 +164,20 @@ async def manual_submit(
             ManualSubmitResult(
                 flag=f, status="error", response="no protocol configured"
             )
-            for f in flags
+            for f in flags_list
         ]
 
     try:
         protocol = get_protocol(protocol_name, protocol_params)
-        results = await asyncio.wait_for(protocol.submit(flags), timeout=60)
+        results = await asyncio.wait_for(protocol.submit(flags_list), timeout=60)
     except asyncio.TimeoutError:
         return [
             ManualSubmitResult(flag=f, status="error", response="submission timed out")
-            for f in flags
+            for f in flags_list
         ]
     except Exception as exc:
         return [
-            ManualSubmitResult(flag=f, status="error", response=str(exc)) for f in flags
+            ManualSubmitResult(flag=f, status="error", response=str(exc)) for f in flags_list
         ]
 
     now = datetime.now(timezone.utc)

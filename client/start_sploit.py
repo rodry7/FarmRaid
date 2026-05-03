@@ -142,11 +142,18 @@ def fetch_flag_format(host: str) -> str:
     return r.json().get("competition", {}).get("flag_format", r"[A-Z0-9]{31}=")
 
 
-def submit_flags(host: str, flags: list[str]) -> list[dict]:
-    """Submit a batch of flag strings.  Returns per-flag result dicts."""
+def submit_flags(
+    host: str,
+    items: list[tuple[str, str | None]],
+    exploit_name: str,
+) -> list[dict]:
+    """Submit a batch of (flag, team_ip) pairs.  Returns per-flag result dicts."""
     r = requests.post(
         _url(host, "/api/flags/submit"),
-        json={"flags": flags},
+        json={
+            "flags": [{"flag": f, "team_ip": ip} for f, ip in items],
+            "exploit_name": exploit_name,
+        },
         headers=_headers(),
         timeout=_API_TIMEOUT,
     )
@@ -162,21 +169,21 @@ class FlagStore:
 
     def __init__(self) -> None:
         self._seen: set[str] = set()
-        self._queue: list[str] = []
+        self._queue: list[tuple[str, str | None]] = []  # (flag, team_ip)
         self._lock = threading.Lock()
 
-    def add(self, flags: list[str]) -> int:
-        """Enqueue unseen flags.  Returns count of newly added flags."""
+    def add(self, flags: list[str], team_ip: str | None = None) -> int:
+        """Enqueue unseen flags tagged with their source team IP.  Returns new count."""
         added = 0
         with self._lock:
             for f in flags:
                 if f not in self._seen:
                     self._seen.add(f)
-                    self._queue.append(f)
+                    self._queue.append((f, team_ip))
                     added += 1
         return added
 
-    def pick(self, n: int) -> list[str]:
+    def pick(self, n: int) -> list[tuple[str, str | None]]:
         with self._lock:
             return list(self._queue[:n])
 
@@ -199,13 +206,13 @@ _POST_PERIOD = 5      # seconds between submission attempts
 _POST_BATCH  = 10_000 # max flags per request
 
 
-def _submit_loop(host: str) -> None:
+def _submit_loop(host: str, exploit_name: str) -> None:
     while not _exit.wait(_POST_PERIOD):
         batch = _store.pick(_POST_BATCH)
         if not batch:
             continue
         try:
-            results = submit_flags(host, batch)
+            results = submit_flags(host, batch, exploit_name)
             _store.mark_sent(len(batch))
 
             by_status: dict[str, int] = {}
@@ -276,7 +283,7 @@ def _run_exploit(
 
     output = out_bytes.decode(errors="replace")
     found: list[str] = flag_re.findall(output)
-    new_count = _store.add(found)
+    new_count = _store.add(found, team_ip)
 
     # Always print a line per team so the user knows the round is progressing.
     if new_count:
@@ -328,7 +335,7 @@ def main() -> None:
         sys.exit(1)
 
     # Kick off the background submission thread.
-    threading.Thread(target=_submit_loop, args=(args.host,), daemon=True).start()
+    threading.Thread(target=_submit_loop, args=(args.host, exploit_name), daemon=True).start()
 
     pool = ThreadPoolExecutor(max_workers=args.threads)
     flag_re: re.Pattern | None = None
@@ -388,14 +395,14 @@ def main() -> None:
         if remaining:
             log.info("Flushing %d remaining flag(s)…", len(remaining))
             try:
-                results = submit_flags(args.host, remaining)
+                results = submit_flags(args.host, remaining, exploit_name)
                 _store.mark_sent(len(remaining))
                 accepted = sum(1 for r in results if r.get("status") == "accepted")
                 log.info("Flushed — %d accepted", accepted)
             except Exception as exc:
                 log.warning("Final flush failed: %s", exc)
                 log.info("Unsubmitted flags (%d):", len(remaining))
-                for f in remaining:
+                for f, _ in remaining:
                     print(f"  {f}")
 
 

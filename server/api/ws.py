@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 
 from auth import ALGORITHM, SECRET_KEY
 from database import AsyncSessionLocal
-from models import Flag
+from models import Exploit, Flag, Team
 
 log = logging.getLogger(__name__)
 
@@ -40,13 +40,23 @@ async def _snapshot_stats() -> dict:
             counts[s] = res.scalar_one() or 0
         total_res = await db.execute(select(func.count()).select_from(Flag))
         total = total_res.scalar_one() or 0
+        exploits_res = await db.execute(
+            select(func.count()).select_from(Exploit).where(Exploit.enabled.is_(True))
+        )
+        active_exploits = exploits_res.scalar_one() or 0
+        teams_res = await db.execute(
+            select(func.count()).select_from(Team).where(Team.active.is_(True))
+        )
+        active_teams = teams_res.scalar_one() or 0
     return {
         "type": "stats",
         "data": {
-            "total": total,
+            "total_flags": total,
             "accepted": counts["accepted"],
             "rejected": counts["rejected"],
             "pending": counts["pending"],
+            "exploits_active": active_exploits,
+            "teams_active": active_teams,
         },
     }
 

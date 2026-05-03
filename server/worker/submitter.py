@@ -72,7 +72,7 @@ async def _publish_stats(redis: aioredis.Redis) -> None:
                 {
                     "type": "stats",
                     "data": {
-                        "total": total,
+                        "total_flags": total,
                         "accepted": counts["accepted"],
                         "rejected": counts["rejected"],
                         "pending": counts["pending"],

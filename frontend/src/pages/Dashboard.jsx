@@ -4,6 +4,7 @@ import api, { openFeed } from '../api'
 import useAuthStore from '../store/authStore'
 import StatCard from '../components/StatCard'
 import FlagFeed from '../components/FlagFeed'
+import ResponseModal from '../components/ResponseModal'
 
 const thCls = 'text-left text-[9px] font-bold tracking-[0.1em] uppercase text-farm-muted py-[7px] px-3 border-b border-farm-border'
 
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [manualText, setManualText] = useState('')
   const [manualLoading, setManualLoading] = useState(false)
   const [manualResults, setManualResults] = useState([])
+  const [modalText, setModalText] = useState(null)
 
   const handleManualSubmit = async () => {
     const flags = manualText.split('\n').map(f => f.trim()).filter(Boolean)
@@ -47,27 +49,39 @@ export default function Dashboard() {
   }
 
   const loadStats = async () => {
+    const [overview, tl, exp, team] = await Promise.allSettled([
+      api.get('/api/stats/overview'),
+      api.get('/api/stats/timeline', { params: { minutes: 1440 } }),
+      api.get('/api/stats/by_exploit'),
+      api.get('/api/stats/by_team'),
+    ])
+    if (overview.status === 'fulfilled') setStats(overview.value.data)
+    else console.error('Stats overview failed:', overview.reason)
+    if (tl.status === 'fulfilled') setTimeline(
+      tl.value.data.map(p => ({
+        time: new Date(p.minute).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        count: p.count,
+      }))
+    )
+    else console.error('Stats timeline failed:', tl.reason)
+    if (exp.status === 'fulfilled') setByExploit(exp.value.data)
+    else console.error('Stats by_exploit failed:', exp.reason)
+    if (team.status === 'fulfilled') setByTeam(team.value.data)
+    else console.error('Stats by_team failed:', team.reason)
+  }
+
+  const loadRecentFlags = async () => {
     try {
-      const [overview, tl, exp, team] = await Promise.all([
-        api.get('/api/stats/overview'),
-        api.get('/api/stats/timeline'),
-        api.get('/api/stats/by_exploit'),
-        api.get('/api/stats/by_team'),
-      ])
-      setStats(overview.data)
-      setTimeline(
-        tl.data.map(p => ({
-          time: new Date(p.minute).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          count: p.count,
-        }))
-      )
-      setByExploit(exp.data)
-      setByTeam(team.data)
-    } catch {}
+      const res = await api.get('/api/flags', { params: { limit: 50 } })
+      setFlagEvents(res.data.items)
+    } catch (e) {
+      console.error('Recent flags failed:', e)
+    }
   }
 
   useEffect(() => {
     loadStats()
+    loadRecentFlags()
     const ws = openFeed(token)
     ws.onmessage = e => {
       try {
@@ -84,6 +98,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5">
+      {modalText !== null && <ResponseModal text={modalText} onClose={() => setModalText(null)} />}
       <h1 className="text-[10px] font-bold tracking-[0.15em] uppercase text-farm-sub">Dashboard</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -138,7 +153,11 @@ export default function Dashboard() {
                       {r.status}
                     </span>
                     <span className="text-farm-sub truncate flex-1">{r.flag}</span>
-                    <span className="text-farm-sub text-[10px] shrink-0 max-w-[180px] truncate">{r.response}</span>
+                    <span
+                      className="text-farm-sub text-[10px] shrink-0 max-w-[180px] truncate cursor-pointer hover:text-farm-text transition-colors"
+                      title="Click to view full response"
+                      onClick={() => setModalText(r.response ?? '')}
+                    >{r.response ?? '—'}</span>
                   </div>
                 ))}
               </div>

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, literal_column, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user
@@ -55,15 +55,17 @@ async def timeline(
 ) -> list[TimelinePoint]:
     since = datetime.now(timezone.utc) - timedelta(minutes=minutes)
 
-    # Truncate captured_at to minute granularity and count accepted flags
+    # literal_column embeds 'minute' as a SQL literal so all three occurrences of
+    # date_trunc are identical expressions — avoids a GroupingError from asyncpg.
+    trunc = func.date_trunc(literal_column("'minute'"), Flag.captured_at)
     res = await db.execute(
         select(
-            func.date_trunc("minute", Flag.captured_at).label("minute"),
+            trunc.label("minute"),
             func.count().label("count"),
         )
         .where(Flag.captured_at >= since, Flag.status == "accepted")
-        .group_by(func.date_trunc("minute", Flag.captured_at))
-        .order_by(func.date_trunc("minute", Flag.captured_at))
+        .group_by(trunc)
+        .order_by(trunc)
     )
     return [TimelinePoint(minute=row.minute, count=row.count) for row in res]
 
