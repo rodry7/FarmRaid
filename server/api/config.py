@@ -66,7 +66,7 @@ async def change_password(
 
 
 @router.get("/config/protocols", response_model=list[ProtocolInfo])
-async def list_protocols(_: dict = Depends(get_current_user)) -> list[ProtocolInfo]:
+async def list_protocols() -> list[ProtocolInfo]:
     return [
         ProtocolInfo(
             name=p["name"],

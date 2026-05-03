@@ -17,6 +17,7 @@ const SUBMIT_COLOR = {
 
 export default function Dashboard() {
   const token = useAuthStore(s => s.token)
+  const logout = useAuthStore(s => s.logout)
   const [stats, setStats] = useState({})
   const [flagEvents, setFlagEvents] = useState([])
   const [timeline, setTimeline] = useState([])
@@ -74,6 +75,9 @@ export default function Dashboard() {
         if (msg.type === 'stats') setStats(s => ({ ...s, ...msg.data }))
         else if (msg.type === 'flag') setFlagEvents(prev => [msg.data, ...prev].slice(0, 200))
       } catch {}
+    }
+    ws.onclose = e => {
+      if (e.code === 4001) logout()
     }
     return () => ws.close()
   }, [token])

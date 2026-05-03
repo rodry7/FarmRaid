@@ -9,12 +9,21 @@ const useConfigStore = create((set) => ({
   fetchConfig: async () => {
     set({ loading: true })
     try {
-      const [cfg, protos] = await Promise.all([
+      const [cfgRes, protosRes] = await Promise.allSettled([
         api.get('/api/config'),
         api.get('/api/config/protocols'),
       ])
-      set({ config: cfg.data, protocols: protos.data })
-    } catch {} finally {
+      if (cfgRes.status === 'fulfilled') {
+        set({ config: cfgRes.value.data })
+      } else {
+        console.error('Failed to fetch config:', cfgRes.reason)
+      }
+      if (protosRes.status === 'fulfilled') {
+        set({ protocols: protosRes.value.data })
+      } else {
+        console.error('Failed to fetch protocols:', protosRes.reason)
+      }
+    } finally {
       set({ loading: false })
     }
   },
