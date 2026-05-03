@@ -177,7 +177,8 @@ async def manual_submit(
         ]
     except Exception as exc:
         return [
-            ManualSubmitResult(flag=f, status="error", response=str(exc)) for f in flags_list
+            ManualSubmitResult(flag=f, status="error", response=str(exc))
+            for f in flags_list
         ]
 
     now = datetime.now(timezone.utc)

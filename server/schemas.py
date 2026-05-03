@@ -175,14 +175,14 @@ class ManualSubmitRequest(BaseModel):
     flags: list[FlagSubmitItem]
     exploit_name: Optional[str] = None
 
-    @field_validator('flags', mode='before')
+    @field_validator("flags", mode="before")
     @classmethod
     def _normalise_flags(cls, v: list) -> list:
         # Accepts plain strings (UI) or {flag, team_ip} dicts (start_sploit.py).
         out = []
         for item in v:
             if isinstance(item, str):
-                out.append({'flag': item})
+                out.append({"flag": item})
             else:
                 out.append(item)
         return out
