@@ -43,7 +43,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "80:80"
+      - "4755:80"
     depends_on:
       - server
     restart: unless-stopped
